@@ -1,19 +1,25 @@
 const std = @import("std");
 const io = @import("io.zig");
 
+const train = @import("train.zig").train;
+
 pub fn start(allocator: std.mem.Allocator) anyerror!void {
-    const input = "123 67 89,99";
+    const args_alloc = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args_alloc);
 
-    var list = std.ArrayList(u32).init(allocator);
-    // Ensure the list is freed at scope exit.
-    // Try commenting out this line!
-    defer list.deinit();
-
-    var it = std.mem.tokenizeAny(u8, input, " ,");
-    while (it.next()) |num| {
-        const n = try std.fmt.parseInt(u32, num, 10);
-        try list.append(n);
+    if (args_alloc.len == 1) {
+        try io.stderr.print("error: no command provided\n", .{});
+        return error.Exit;
     }
 
-    try io.stdout.print("{any}\n", .{list.items});
+    const command = std.meta.stringToEnum(Command, args_alloc[1]) orelse {
+        try io.stderr.print("error: unknown command - {s}\n", .{args_alloc[1]});
+        return error.Exit;
+    };
+
+    try switch (command) {
+        .train => train(allocator, args_alloc),
+    };
 }
+
+const Command = enum { train };
