@@ -1,0 +1,12 @@
+.{
+    .name = .grall,
+    .version = "0.0.0",
+    .minimum_zig_version = "0.14.1",
+    .fingerprint = 0xe85f9c98c0838ada,
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
