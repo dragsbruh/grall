@@ -1,15 +1,125 @@
-const start = @import("grall.zig").start;
+const std = @import("std");
+
+const lib = @import("grall_lib");
+
+const commands = @import("commands.zig");
+
+const stdout = std.io.getStdOut().writer();
+const stderr = std.io.getStdErr().writer();
+
+fn printUsage() !void {
+    try stderr.print(
+        \\usage: grall <command> [...args]
+        \\
+        \\commands:
+        \\  train   <modelfile> <depth> [...text-files]
+        \\  run     <modelfile> <ending_style>
+        \\  yaml    <modelfile> <yamlfile>
+        \\          convert model to yaml (for debugging)
+        \\  help
+        \\  version
+        \\
+        \\ending styles: (runtime terminates every <x>)
+        \\  line
+        \\  word
+        \\  none
+        \\  never
+        \\
+        \\
+    , .{});
+}
+
+fn run(allocator: std.mem.Allocator) anyerror!void {
+    const args_alloc = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args_alloc);
+
+    if (args_alloc.len == 1) {
+        try printUsage();
+        return error.Exit;
+    }
+
+    const command_str = args_alloc[1];
+    const command = std.meta.stringToEnum(Command, command_str) orelse {
+        try stdout.print("error: unknown command - {s}\n", .{command_str});
+        return error.Exit;
+    };
+
+    switch (command) {
+        .train => {
+            if (args_alloc.len < 5) {
+                try stderr.print("error: expected atleast 5 arguments, got {d}\n\n", .{args_alloc.len});
+                try printUsage();
+                return error.Exit;
+            }
+
+            const model_path = args_alloc[2];
+            const depth_str = args_alloc[3];
+            const text_files = args_alloc[4..];
+
+            const depth = std.fmt.parseInt(u32, depth_str, 10) catch |err| {
+                try stderr.print("error: invalid depth: {}\n", .{err});
+                return error.Exit;
+            };
+
+            try commands.train(allocator, model_path, depth, text_files);
+        },
+
+        .run => {
+            if (args_alloc.len != 4) {
+                try stderr.print("error: expected exactly 4 arguments, got {d}\n\n", .{args_alloc.len});
+                try printUsage();
+                return error.Exit;
+            }
+
+            const model_path = args_alloc[2];
+            const ending_str = args_alloc[3];
+
+            const ending = std.meta.stringToEnum(commands.EndingStyle, ending_str) orelse {
+                try stderr.print(
+                    \\error: invalid ending style: {s}
+                    \\supported: line, word, file, none
+                    \\
+                , .{ending_str});
+                return error.Exit;
+            };
+
+            try commands.run(allocator, model_path, ending);
+        },
+
+        .yaml => {
+            if (args_alloc.len != 4) {
+                try stderr.print("error: expected exactly 4 arguments, got {d}\n\n", .{args_alloc.len});
+                try printUsage();
+                return error.Exit;
+            }
+
+            const model_path = args_alloc[2];
+            const yaml_path = args_alloc[3];
+
+            try commands.yaml(allocator, model_path, yaml_path);
+        },
+
+        .help => try printUsage(),
+
+        .version => try stdout.print(
+            \\grall v{s}
+            \\serializer format v{d}
+            \\
+        , .{ lib.VERSION, lib.serializer.VERSION }),
+    }
+}
+
+const Command = enum { train, run, help, version, yaml };
 
 pub fn main() !u8 {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    start(allocator) catch |err| switch (err) {
+    run(allocator) catch |err| switch (err) {
         error.Exit => return 1,
         else => return err,
     };
+
     return 0;
 }
-
-const std = @import("std");
