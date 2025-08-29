@@ -1,5 +1,6 @@
-const lib = @import("grall_lib");
 const std = @import("std");
+
+const lib = @import("grall_lib");
 
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
@@ -55,8 +56,6 @@ pub fn train(allocator: std.mem.Allocator, model_path: []const u8, depth: u32, t
     try buffered_writer.flush();
 }
 
-pub const EndingStyle = enum { line, word, file, none };
-
 fn load_model(allocator: std.mem.Allocator, path: []const u8, progress: ?std.Progress.Node) !lib.RuntimeChain {
     var file = std.fs.cwd().openFile(path, .{}) catch |err| {
         try stderr.print("error: could not open file: {}\n", .{err});
@@ -69,7 +68,7 @@ fn load_model(allocator: std.mem.Allocator, path: []const u8, progress: ?std.Pro
     return try lib.serializer.deserializeRunner(allocator, buffered_reader.reader().any(), progress);
 }
 
-pub fn run(allocator: std.mem.Allocator, model_path: []const u8, _: EndingStyle) !void {
+pub fn run(allocator: std.mem.Allocator, model_path: []const u8) !void {
     var chain = try load_model(allocator, model_path, null);
     defer chain.deinit(allocator);
 
@@ -79,7 +78,7 @@ pub fn run(allocator: std.mem.Allocator, model_path: []const u8, _: EndingStyle)
     var buffered_writer = std.io.bufferedWriter(stdout);
     var writer = buffered_writer.writer();
 
-    while (chain.sampleNode(seq.seq, .nearest)) |byte| {
+    while (chain.sampleNode(seq.seq, .precise)) |byte| {
         seq.push(byte);
         try writer.writeByte(byte);
     }

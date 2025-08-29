@@ -1,5 +1,7 @@
 # termination styles
 
+> note: termination styles are not gonna be implemented for a while. all generations will use the [never](#never) style.
+
 termination styles control when the generation will end.
 
 note that the generation will always end if the model has never seen a sequence.

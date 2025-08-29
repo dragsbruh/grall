@@ -27,22 +27,18 @@ the binaries for your os from there. otherwise you can [compile from source](#co
 
 ## usage
 
+> note: termination styles are not gonna be implemented for a while. all generations will use the [never](#never) style.
+
 ```yaml
 usage: grall <command> [...args]
 
 commands:
   train   <modelfile> <depth> [...text-files]
-  run     <modelfile> <ending_style>
+  run     <modelfile>
   yaml    <modelfile> <yamlfile>
           convert model to (not-so-correct) yaml (for debugging)
   help
   version
-
-ending styles: (runtime terminates every <x>)
-  line
-  word
-  none
-  never
 ```
 
 ### training a model

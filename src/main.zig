@@ -13,18 +13,11 @@ fn printUsage() !void {
         \\
         \\commands:
         \\  train   <modelfile> <depth> [...text-files]
-        \\  run     <modelfile> <ending_style>
+        \\  run     <modelfile>
         \\  yaml    <modelfile> <yamlfile>
         \\          convert model to yaml (for debugging)
         \\  help
         \\  version
-        \\
-        \\ending styles: (runtime terminates every <x>)
-        \\  line
-        \\  word
-        \\  none
-        \\  never
-        \\
         \\
     , .{});
 }
@@ -65,25 +58,14 @@ fn run(allocator: std.mem.Allocator) anyerror!void {
         },
 
         .run => {
-            if (args_alloc.len != 4) {
-                try stderr.print("error: expected exactly 4 arguments, got {d}\n\n", .{args_alloc.len});
+            if (args_alloc.len != 3) {
+                try stderr.print("error: expected exactly 3 arguments, got {d}\n\n", .{args_alloc.len});
                 try printUsage();
                 return error.Exit;
             }
 
             const model_path = args_alloc[2];
-            const ending_str = args_alloc[3];
-
-            const ending = std.meta.stringToEnum(commands.EndingStyle, ending_str) orelse {
-                try stderr.print(
-                    \\error: invalid ending style: {s}
-                    \\supported: line, word, file, none
-                    \\
-                , .{ending_str});
-                return error.Exit;
-            };
-
-            try commands.run(allocator, model_path, ending);
+            try commands.run(allocator, model_path);
         },
 
         .yaml => {
