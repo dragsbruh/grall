@@ -4,11 +4,8 @@ const lib = @import("grall_lib");
 
 const commands = @import("commands.zig");
 
-const stdout = std.io.getStdOut().writer();
-const stderr = std.io.getStdErr().writer();
-
-fn printUsage() !void {
-    try stderr.print(
+fn printUsage(out: anytype) !void {
+    try out.print(
         \\usage: grall <command> [...args]
         \\
         \\commands:
@@ -23,11 +20,14 @@ fn printUsage() !void {
 }
 
 fn run(allocator: std.mem.Allocator) anyerror!void {
+    const stdout = std.io.getStdOut().writer();
+    const stderr = std.io.getStdErr().writer();
+
     const args_alloc = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args_alloc);
 
     if (args_alloc.len == 1) {
-        try printUsage();
+        try printUsage(stderr);
         return error.Exit;
     }
 
@@ -41,7 +41,7 @@ fn run(allocator: std.mem.Allocator) anyerror!void {
         .train => {
             if (args_alloc.len < 5) {
                 try stderr.print("error: expected atleast 5 arguments, got {d}\n\n", .{args_alloc.len});
-                try printUsage();
+                try printUsage(stderr);
                 return error.Exit;
             }
 
@@ -60,7 +60,7 @@ fn run(allocator: std.mem.Allocator) anyerror!void {
         .run => {
             if (args_alloc.len != 3) {
                 try stderr.print("error: expected exactly 3 arguments, got {d}\n\n", .{args_alloc.len});
-                try printUsage();
+                try printUsage(stderr);
                 return error.Exit;
             }
 
@@ -71,7 +71,7 @@ fn run(allocator: std.mem.Allocator) anyerror!void {
         .yaml => {
             if (args_alloc.len != 4) {
                 try stderr.print("error: expected exactly 4 arguments, got {d}\n\n", .{args_alloc.len});
-                try printUsage();
+                try printUsage(stderr);
                 return error.Exit;
             }
 
@@ -81,7 +81,7 @@ fn run(allocator: std.mem.Allocator) anyerror!void {
             try commands.yaml(allocator, model_path, yaml_path);
         },
 
-        .help => try printUsage(),
+        .help => try printUsage(stdout),
 
         .version => try stdout.print(
             \\grall v{s}

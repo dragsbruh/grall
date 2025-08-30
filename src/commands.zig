@@ -2,10 +2,9 @@ const std = @import("std");
 
 const lib = @import("grall_lib");
 
-const stdout = std.io.getStdOut().writer();
-const stderr = std.io.getStdErr().writer();
-
 pub fn train(allocator: std.mem.Allocator, model_path: []const u8, depth: u32, text_files: []const []const u8) !void {
+    const stderr = std.io.getStdErr().writer();
+
     var chain = try lib.TrainerChain.init(depth);
     defer chain.deinit(allocator);
 
@@ -57,6 +56,8 @@ pub fn train(allocator: std.mem.Allocator, model_path: []const u8, depth: u32, t
 }
 
 fn load_model(allocator: std.mem.Allocator, path: []const u8, progress: ?std.Progress.Node) !lib.RuntimeChain {
+    const stderr = std.io.getStdErr().writer();
+
     var file = std.fs.cwd().openFile(path, .{}) catch |err| {
         try stderr.print("error: could not open file: {}\n", .{err});
         return error.Exit;
@@ -69,6 +70,8 @@ fn load_model(allocator: std.mem.Allocator, path: []const u8, progress: ?std.Pro
 }
 
 pub fn run(allocator: std.mem.Allocator, model_path: []const u8) !void {
+    const stdout = std.io.getStdOut().writer();
+
     var chain = try load_model(allocator, model_path, null);
     defer chain.deinit(allocator);
 

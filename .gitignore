@@ -2,3 +2,7 @@ zig-out
 .zig-cache
 .env
 data
+
+# Added by goreleaser init:
+dist/
+.intentionally-empty-file.o
