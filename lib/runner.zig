@@ -94,25 +94,6 @@ pub const RuntimeChain = struct {
         const node = self.getNode(seq, matcher) orelse return null;
         return node.sample(self.random);
     }
-
-    pub fn serializeYaml(self: *@This(), writer: std.io.AnyWriter) !void {
-        try writer.print("depth: {d}\n", .{self.depth});
-        try writer.print("node_count: {d}\n", .{self.nodes.len});
-
-        var weights_count: usize = 0;
-        for (self.nodes) |node| weights_count += node.weights.len;
-        try writer.print("weights_count: {d}\n", .{weights_count});
-
-        try writer.print("nodes:\n", .{});
-        for (self.nodes) |node| {
-            try writer.print("  - seq: {x}\n", .{node.seq});
-            try writer.print("    weights:\n", .{});
-
-            for (node.weights) |wt| {
-                try writer.print("      - char: {d}\n      - weight: {d}\n", .{ wt.char, wt.weight });
-            }
-        }
-    }
 };
 
 pub const NodeMatchType = enum { precise, nearest };
