@@ -21,7 +21,7 @@ const AnyNodeArray = union(enum) {
     trainer: []*TrainerChain.Node,
 };
 
-fn serializeNode(writer: std.io.AnyWriter, seq: []const u8, weights: []NodeWeight) !void {
+fn serializeNode(writer: std.io.AnyWriter, seq: []const u8, weights: []const NodeWeight) !void {
     try writer.writeByte(@intCast(weights.len - 1));
     try writer.writeAll(seq);
     for (weights) |wt| {
@@ -110,6 +110,7 @@ pub fn deserializeRunner(allocator: std.mem.Allocator, reader: std.io.AnyReader,
         try allocator.alloc(RuntimeChain.Node, node_count),
         RuntimeChain.DeserializedBuffer{
             .weights = try allocator.alloc(NodeWeight, weights_count),
+            .cum_weights = try allocator.alloc(usize, weights_count),
             .sequences = try allocator.alloc(u8, node_count * depth),
         },
     );
@@ -118,10 +119,11 @@ pub fn deserializeRunner(allocator: std.mem.Allocator, reader: std.io.AnyReader,
     for (0..node_count) |i| {
         const node_weights_count: usize = @as(usize, @intCast(try reader.readByte())) + 1;
 
-        const node = RuntimeChain.Node{
-            .seq = chain.deser_buf.sequences[i * depth .. (i + 1) * depth],
-            .weights = chain.deser_buf.weights[weights_offset .. weights_offset + node_weights_count],
-        };
+        const node = try RuntimeChain.Node.init(
+            chain.deser_buf.sequences[i * depth .. (i + 1) * depth],
+            chain.deser_buf.weights[weights_offset .. weights_offset + node_weights_count],
+            chain.deser_buf.cum_weights[weights_offset .. weights_offset + node_weights_count],
+        );
 
         weights_offset += node_weights_count;
 

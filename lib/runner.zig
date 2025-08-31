@@ -15,6 +15,7 @@ pub const RuntimeChain = struct {
 
     pub const DeserializedBuffer = struct {
         weights: []NodeWeight,
+        cum_weights: []usize,
         sequences: []u8,
     };
 
@@ -22,20 +23,30 @@ pub const RuntimeChain = struct {
         seq: []u8,
         weights: []NodeWeight,
 
-        /// does not own seq or weights
-        pub fn init(seq: []const u8, weights: []const NodeWeight) !Node {
-            return Node{
+        // tradeoff memory for performance hopefully but if it goes well
+        //ill remove storing seq/weights in node and directly access from deser buf
+        cum_weights: []usize,
+
+        /// does not own seq or (cum_weights, will recalculate cumulative weights anyway so fill that with undefined
+        pub fn init(seq: []u8, weights: []NodeWeight, cum_weights: []usize) !Node {
+            const node = Node{
                 .seq = seq,
                 .weights = weights,
+                .cum_weights = cum_weights,
             };
+
+            var sum: usize = 0;
+            for (weights, 0..) |wt, wi| {
+                sum += @intCast(wt.weight);
+                node.cum_weights[wi] = sum;
+            }
+
+            return node;
         }
 
         pub fn sample(self: *@This(), random: std.Random) u8 {
+            const num = random.intRangeLessThan(usize, 0, self.cum_weights[self.cum_weights.len - 1]);
             var sum: usize = 0;
-            for (self.weights) |w| sum += @intCast(w.weight);
-
-            const num = random.intRangeLessThan(usize, 0, sum);
-            sum = 0;
             for (self.weights) |w| {
                 sum += @intCast(w.weight);
                 if (sum > num) return w.char;
