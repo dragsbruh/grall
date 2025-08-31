@@ -27,7 +27,7 @@ pub const RuntimeChain = struct {
         //ill remove storing seq/weights in node and directly access from deser buf
         cum_weights: []usize,
 
-        /// does not own seq or (cum_weights, will recalculate cumulative weights anyway so fill that with undefined
+        /// does not own seq or (cum_)weights. caller must also call .memoize() before sampling
         pub fn init(seq: []u8, weights: []NodeWeight, cum_weights: []usize) !Node {
             const node = Node{
                 .seq = seq,
@@ -35,13 +35,15 @@ pub const RuntimeChain = struct {
                 .cum_weights = cum_weights,
             };
 
-            var sum: usize = 0;
-            for (weights, 0..) |wt, wi| {
-                sum += @intCast(wt.weight);
-                node.cum_weights[wi] = sum;
-            }
-
             return node;
+        }
+
+        pub fn memoize_weights(self: *@This()) void {
+            var sum: usize = 0;
+            for (self.weights, 0..) |wt, wi| {
+                sum += @intCast(wt.weight);
+                self.cum_weights[wi] = sum;
+            }
         }
 
         pub fn sample(self: *@This(), random: std.Random) u8 {
@@ -67,6 +69,7 @@ pub const RuntimeChain = struct {
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        allocator.free(self.deser_buf.cum_weights);
         allocator.free(self.deser_buf.sequences);
         allocator.free(self.deser_buf.weights);
         allocator.free(self.nodes);

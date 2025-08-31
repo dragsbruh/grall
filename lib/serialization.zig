@@ -119,7 +119,7 @@ pub fn deserializeRunner(allocator: std.mem.Allocator, reader: std.io.AnyReader,
     for (0..node_count) |i| {
         const node_weights_count: usize = @as(usize, @intCast(try reader.readByte())) + 1;
 
-        const node = try RuntimeChain.Node.init(
+        var node = try RuntimeChain.Node.init(
             chain.deser_buf.sequences[i * depth .. (i + 1) * depth],
             chain.deser_buf.weights[weights_offset .. weights_offset + node_weights_count],
             chain.deser_buf.cum_weights[weights_offset .. weights_offset + node_weights_count],
@@ -137,6 +137,8 @@ pub fn deserializeRunner(allocator: std.mem.Allocator, reader: std.io.AnyReader,
                 .weight = weight,
             };
         }
+
+        node.memoize_weights();
 
         chain.nodes[i] = node;
         if (progress) |p| p.completeOne();
