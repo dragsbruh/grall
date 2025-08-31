@@ -9,7 +9,7 @@ the binaries for your os from there. otherwise you can [compile from source](#co
 
 ### compiling from source
 
-1. make sure you have [zig 0.14.0](), and clone this repository
+1. make sure you have [zig 0.14.1](https://ziglang.org/download/), and clone this repository
 
 2. build the executable
 
@@ -27,14 +27,14 @@ the binaries for your os from there. otherwise you can [compile from source](#co
 
 ## usage
 
-> note: termination styles are not gonna be implemented for a while. all generations will use the [never](#never) style.
+> note: termination styles are not gonna be implemented for a while. all generations will use the [never](./docs/termination.md#never) style.
 
 ```yaml
 usage: grall <command> [...args]
 
 commands:
   train   <modelfile> <depth> [...text-files]
-  run     <modelfile>
+  run     <modelfile> [infinite]
   yaml    <modelfile> <yamlfile>
           convert model to (not-so-correct) yaml (for debugging)
   help
