@@ -2,6 +2,11 @@
 
 a (hopefully) fast and memory efficient markov trainer/runner
 
+## demo
+
+> I must say also a few words. Leave me; I am inexorable.
+> \- _Grall, trained on Frankenstein_
+
 ## installation
 
 if there are [releases](https://github.com/dragsbruh/grall/releases) available, download
@@ -61,6 +66,8 @@ low can create incomprehensible sentences.
 this should create a `model.gril` file with the model serialized. you can now [run it](#running-a-model).
 
 ### running a model
+
+> im currently playing around with different performance optimizations so theres gonna be useless memory bloat in some places ill remove them later
 
 after [training](#training-a-model), you can run the serialized model with this command
 
