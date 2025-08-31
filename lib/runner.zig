@@ -7,7 +7,7 @@ const WeightType = @import("root.zig").WeightType;
 /// has optimizations specifically made for runtime
 pub const RuntimeChain = struct {
     depth: u32,
-    nodes: []*Node,
+    nodes: []Node,
     random: std.Random,
 
     /// used for deserialized models to speed up loading
@@ -23,17 +23,11 @@ pub const RuntimeChain = struct {
         weights: []NodeWeight,
 
         /// does not own seq or weights
-        pub fn init(allocator: std.mem.Allocator, seq: []const u8, weights: []const NodeWeight) !*Node {
-            const node = try allocator.create(Node);
-
-            node.seq = seq;
-            node.weights = weights;
-
-            return node;
-        }
-
-        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
-            allocator.destroy(self);
+        pub fn init(seq: []const u8, weights: []const NodeWeight) !Node {
+            return Node{
+                .seq = seq,
+                .weights = weights,
+            };
         }
 
         pub fn sample(self: *@This(), random: std.Random) u8 {
@@ -51,7 +45,7 @@ pub const RuntimeChain = struct {
         }
     };
 
-    pub fn init(depth: u32, nodes: []*Node, deser_buf: DeserializedBuffer) RuntimeChain {
+    pub fn init(depth: u32, nodes: []Node, deser_buf: DeserializedBuffer) RuntimeChain {
         var alg = std.Random.RomuTrio.init(std.crypto.random.int(u64));
         return RuntimeChain{
             .nodes = nodes,
@@ -62,37 +56,30 @@ pub const RuntimeChain = struct {
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
-        for (self.nodes) |node| node.deinit(allocator);
-
         allocator.free(self.deser_buf.sequences);
         allocator.free(self.deser_buf.weights);
         allocator.free(self.nodes);
     }
 
-    pub fn getNode(self: *@This(), seq: []const u8, matcher: NodeMatchType) ?*Node {
+    pub fn sampleNode(self: *@This(), seq: []const u8, matcher: NodeMatchType) ?u8 {
         var low: usize = 0;
         var high: usize = self.nodes.len;
 
         while (low < high) {
             const mid: usize = (low + high) / 2;
-            const node = self.nodes[mid];
+            const node = &self.nodes[mid];
 
             switch (revCmp(seq, node.seq)) {
                 .lt => high = mid,
                 .gt => low = mid + 1,
-                .eq => return node,
+                .eq => return node.sample(self.random),
             }
         }
 
         return switch (matcher) {
             .precise => null,
-            .nearest => if (self.nodes[low].seq[0] == seq[0]) self.nodes[low] else null,
+            .nearest => if (self.nodes[low].seq[0] == seq[0]) self.nodes[low].sample(self.random) else null,
         };
-    }
-
-    pub fn sampleNode(self: *@This(), seq: []const u8, matcher: NodeMatchType) ?u8 {
-        const node = self.getNode(seq, matcher) orelse return null;
-        return node.sample(self.random);
     }
 };
 

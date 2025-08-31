@@ -79,7 +79,7 @@ pub fn run(allocator: std.mem.Allocator, model_path: []const u8) !void {
     defer seq.deinit(allocator);
 
     var buffered_writer = std.io.bufferedWriter(stdout);
-    var writer = buffered_writer.writer();
+    const writer = buffered_writer.writer();
 
     while (chain.sampleNode(seq.seq, .nearest)) |byte| {
         seq.push(byte);
