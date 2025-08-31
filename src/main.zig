@@ -58,14 +58,16 @@ fn run(allocator: std.mem.Allocator) anyerror!void {
         },
 
         .run => {
-            if (args_alloc.len != 3) {
-                try stderr.print("error: expected exactly 3 arguments, got {d}\n\n", .{args_alloc.len});
+            if (args_alloc.len < 3) {
+                try stderr.print("error: expected atleast 3 arguments, got {d}\n\n", .{args_alloc.len});
                 try printUsage(stderr);
                 return error.Exit;
             }
 
             const model_path = args_alloc[2];
-            try commands.run(allocator, model_path);
+            const infinite = if (args_alloc.len > 3 and std.mem.eql(u8, args_alloc[3], "infinite")) true else false;
+
+            try commands.run(allocator, model_path, infinite);
         },
 
         .yaml => {

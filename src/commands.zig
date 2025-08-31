@@ -69,7 +69,7 @@ fn load_model(allocator: std.mem.Allocator, path: []const u8, progress: ?std.Pro
     return try lib.serializer.deserializeRunner(allocator, buffered_reader.reader().any(), progress);
 }
 
-pub fn run(allocator: std.mem.Allocator, model_path: []const u8) !void {
+pub fn run(allocator: std.mem.Allocator, model_path: []const u8, infinite: bool) !void {
     const stdout = std.io.getStdOut().writer();
 
     var chain = try load_model(allocator, model_path, null);
@@ -81,7 +81,12 @@ pub fn run(allocator: std.mem.Allocator, model_path: []const u8) !void {
     var buffered_writer = std.io.bufferedWriter(stdout);
     const writer = buffered_writer.writer();
 
-    while (chain.sampleNode(seq.seq, .nearest)) |byte| {
+    while (true) {
+        const byte = chain.sampleNode(seq.seq, .nearest) orelse if (infinite) {
+            seq.reset();
+            continue;
+        } else break;
+
         seq.push(byte);
         try writer.writeByte(byte);
     }
