@@ -13,6 +13,10 @@ pub const RuntimeChain = struct {
     /// used for deserialized models to speed up loading
     deser_buf: DeserializedBuffer,
 
+    indexes: [256]?Index,
+
+    pub const Index = struct { begin: usize, end: usize };
+
     pub const DeserializedBuffer = struct {
         weights: []NodeWeight,
         cum_weights: []usize,
@@ -58,6 +62,7 @@ pub const RuntimeChain = struct {
         }
     };
 
+    /// must call .build_index() after this
     pub fn init(depth: u32, nodes: []Node, deser_buf: DeserializedBuffer) RuntimeChain {
         var alg = std.Random.RomuTrio.init(std.crypto.random.int(u64));
         return RuntimeChain{
@@ -65,7 +70,20 @@ pub const RuntimeChain = struct {
             .depth = depth,
             .deser_buf = deser_buf,
             .random = alg.random(),
+            .indexes = undefined,
         };
+    }
+
+    pub fn build_index(self: *@This()) void {
+        var i: usize = 0;
+        while (i < self.nodes.len) : (i += 1) {
+            const b: u8 = self.nodes[i].seq[self.depth - 1];
+            if (self.indexes[b] == null) {
+                self.indexes[b] = .{ .begin = i, .end = i + 1 };
+            } else {
+                self.indexes[b].?.end = i + 1;
+            }
+        }
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -76,8 +94,9 @@ pub const RuntimeChain = struct {
     }
 
     pub fn sampleNode(self: *@This(), seq: []const u8, matcher: NodeMatchType) ?u8 {
-        var low: usize = 0;
-        var high: usize = self.nodes.len;
+        const idx = self.indexes[seq[seq.len - 1]];
+        var low: usize = if (idx) |i| i.begin else 0;
+        var high: usize = if (idx) |i| i.end else self.nodes.len;
 
         while (low < high) {
             const mid: usize = (low + high) / 2;
