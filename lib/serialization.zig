@@ -16,77 +16,34 @@ pub const VERSION: u8 = 1;
 
 // ill probably add gzipping
 
-const AnyNodeArray = union(enum) {
-    runtime: []*RuntimeChain.Node,
-    trainer: []*TrainerChain.Node,
-};
-
-fn serializeNode(writer: std.io.AnyWriter, seq: []const u8, weights: []const NodeWeight) !void {
-    try writer.writeByte(@intCast(weights.len - 1));
-    try writer.writeAll(seq);
-    for (weights) |wt| {
-        try writer.writeByte(wt.char);
-        try writer.writeInt(WeightType, wt.weight, .little);
-    }
-}
-
-fn serializeAny(writer: std.io.AnyWriter, depth: u32, nodes: AnyNodeArray, progress: ?std.Progress.Node) !void {
+/// ends progress
+pub fn serializeTrainer(chain: TrainerChain, writer: std.io.AnyWriter, progress: ?std.Progress.Node) !void {
     defer if (progress) |p| p.end();
 
     try writer.writeAll("GRIL");
     try writer.writeByte(@intCast(VERSION));
 
-    try writer.writeInt(u32, depth, .little);
-    try writer.writeInt(u32, @intCast(switch (nodes) {
-        .runtime => nodes.runtime.len,
-        .trainer => nodes.trainer.len,
-    }), .little);
+    try writer.writeInt(u32, chain.depth, .little);
+    try writer.writeInt(u32, @intCast(chain.nodes.items.len), .little);
 
     var weights_count: usize = 0;
 
-    switch (nodes) {
-        .runtime => {
-            if (progress) |p| p.setEstimatedTotalItems(nodes.runtime.len);
-            for (nodes.runtime) |node| weights_count += node.weights.len;
-        },
-        .trainer => {
-            if (progress) |p| p.setEstimatedTotalItems(nodes.trainer.len);
-            for (nodes.trainer) |node| weights_count += node.weights.items.len;
-        },
-    }
+    if (progress) |p| p.setEstimatedTotalItems(chain.nodes.items.len);
+    for (chain.nodes.items) |node| weights_count += node.weights.items.len;
 
     try writer.writeInt(u32, @intCast(weights_count), .little);
+    for (chain.nodes.items) |node| {
+        try writer.writeByte(@intCast(node.weights.items.len - 1));
+        try writer.writeAll(node.seq);
+        for (node.weights.items) |wt| {
+            try writer.writeByte(wt.char);
+            try writer.writeInt(WeightType, wt.weight, .little);
+        }
 
-    switch (nodes) {
-        .runtime => {
-            for (nodes.runtime) |node| {
-                try serializeNode(writer, node.seq, node.weights);
-                if (progress) |p| p.completeOne();
-            }
-        },
-        .trainer => {
-            for (nodes.trainer) |node| {
-                try serializeNode(writer, node.seq, node.weights.items);
-                if (progress) |p| p.completeOne();
-            }
-        },
+        if (progress) |p| p.completeOne();
     }
 
     try writer.writeAll("LIRG");
-}
-
-/// ends progress
-pub fn serializeTrainer(chain: TrainerChain, writer: std.io.AnyWriter, progress: ?std.Progress.Node) !void {
-    try serializeAny(writer, chain.depth, AnyNodeArray{
-        .trainer = chain.nodes.items,
-    }, progress);
-}
-
-/// ends progress
-pub fn serializeRunner(chain: RuntimeChain, writer: std.io.AnyWriter, progress: ?std.Progress.Node) !void {
-    try serializeAny(writer, chain.depth, AnyNodeArray{
-        .runtime = chain.nodes,
-    }, progress);
 }
 
 /// ends progress
