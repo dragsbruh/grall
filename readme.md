@@ -39,7 +39,7 @@ usage: grall <command> [...args]
 
 commands:
   train   <modelfile> <depth> [...text-files]
-  run     <modelfile> [infinite]
+  run     <modelfile> [infinite] [delay]
   yaml    <modelfile> <yamlfile>
           convert model to (not-so-correct) yaml (for debugging)
   help
@@ -77,3 +77,4 @@ grall run ./model.gril
 
 `ending_style` -> generation ending style. only for plaintext inputs. `line` will make the runtime stop after
 every new line, etc. see [termination style](./docs/termination.md).
+`delay` -> sleeps `delay` ms per token generation
