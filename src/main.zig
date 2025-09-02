@@ -2,6 +2,7 @@ const std = @import("std");
 
 const lib = @import("grall_lib");
 
+const api = @import("api.zig");
 const commands = @import("commands.zig");
 
 fn printUsage(out: anytype) !void {
@@ -86,6 +87,18 @@ fn run(allocator: std.mem.Allocator) anyerror!void {
             try commands.yaml(allocator, model_path, yaml_path);
         },
 
+        .api => {
+            if (args_alloc.len != 3) {
+                try stderr.print("error: expected atleast 3 arguments, got {d}\n\n", .{args_alloc.len});
+                try printUsage(stderr);
+                return error.Exit;
+            }
+
+            const model_path = args_alloc[2];
+
+            try api.api(allocator, model_path);
+        },
+
         .help => try printUsage(stdout),
 
         .version => try stdout.print(
@@ -96,7 +109,7 @@ fn run(allocator: std.mem.Allocator) anyerror!void {
     }
 }
 
-const Command = enum { train, run, help, version, yaml };
+const Command = enum { train, run, help, version, yaml, api };
 
 pub fn main() !u8 {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
