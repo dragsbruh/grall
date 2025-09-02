@@ -7,7 +7,7 @@ const WeightType = @import("root.zig").WeightType;
 pub const RuntimeChain = struct {
     depth: u32,
     nodes: []Node,
-    random: std.Random,
+    random: std.Random.RomuTrio,
 
     /// used for deserialized models to speed up loading
     deser_buf: DeserializedBuffer,
@@ -41,8 +41,8 @@ pub const RuntimeChain = struct {
             return node;
         }
 
-        pub fn sample(self: *@This(), random: std.Random) u8 {
-            const num = random.intRangeLessThan(usize, 0, self.weights[self.weights.len - 1].cum_weight);
+        pub fn sample(self: *@This(), random: *std.Random.RomuTrio) u8 {
+            const num = random.random().intRangeLessThan(usize, 0, self.weights[self.weights.len - 1].cum_weight);
             for (self.weights) |w| {
                 if (w.cum_weight > num) return w.char;
             }
@@ -53,12 +53,11 @@ pub const RuntimeChain = struct {
 
     /// must call .build_index() after this
     pub fn init(depth: u32, nodes: []Node, deser_buf: DeserializedBuffer) RuntimeChain {
-        var alg = std.Random.RomuTrio.init(std.crypto.random.int(u64));
         return RuntimeChain{
             .nodes = nodes,
             .depth = depth,
             .deser_buf = deser_buf,
-            .random = alg.random(),
+            .random = std.Random.RomuTrio.init(std.crypto.random.int(u64)),
             .indexes = undefined,
         };
     }
@@ -93,13 +92,13 @@ pub const RuntimeChain = struct {
             switch (revCmp(seq, node.seq)) {
                 .lt => high = mid,
                 .gt => low = mid + 1,
-                .eq => return node.sample(self.random),
+                .eq => return node.sample(&self.random),
             }
         }
 
         return switch (matcher) {
             .precise => null,
-            .nearest => if (self.nodes[low].seq[0] == seq[0]) self.nodes[low].sample(self.random) else null,
+            .nearest => if (self.nodes[low].seq[0] == seq[0]) self.nodes[low].sample(&self.random) else null,
         };
     }
 };
