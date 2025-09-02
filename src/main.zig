@@ -66,8 +66,11 @@ fn run(allocator: std.mem.Allocator) anyerror!void {
 
             const model_path = args_alloc[2];
             const infinite = if (args_alloc.len > 3 and std.mem.eql(u8, args_alloc[3], "infinite")) true else false;
+            const limit = if (args_alloc.len > 4) blk: {
+                break :blk try std.fmt.parseInt(usize, args_alloc[4], 10);
+            } else null;
 
-            try commands.run(allocator, model_path, infinite);
+            try commands.run(allocator, model_path, infinite, limit);
         },
 
         .yaml => {
