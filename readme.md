@@ -55,7 +55,7 @@ lets say text files are in the `./data/` directory as plaintext files.
 you can use the command:
 
 ```bash
-grall train ./model.gril 8 none ./data/* # your shell should autocomplete this
+grall train ./model.gril 8 ./data/* # your shell should autocomplete this
 ```
 
 to train the model with `8` depth.
@@ -71,8 +71,8 @@ this should create a `model.gril` file with the model serialized. you can now [r
 
 after [training](#training-a-model), you can run the serialized model with this command
 
-```
-grall run true ./model.gril none
+```bash
+grall run ./model.gril
 ```
 
 `ending_style` -> generation ending style. only for plaintext inputs. `line` will make the runtime stop after
