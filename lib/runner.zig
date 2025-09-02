@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const NodeWeight = @import("root.zig").NodeWeight;
 const revCmp = @import("util.zig").revCmp;
 const WeightType = @import("root.zig").WeightType;
 
@@ -18,9 +17,8 @@ pub const RuntimeChain = struct {
     pub const Index = struct { begin: usize, end: usize };
 
     pub const DeserializedBuffer = struct {
-        weights: []NodeWeight,
-        cum_weights: []usize,
         sequences: []u8,
+        weights: []Node.NodeWeight,
     };
 
     pub const Node = struct {
@@ -29,33 +27,24 @@ pub const RuntimeChain = struct {
 
         // tradeoff memory for performance hopefully but if it goes well
         //ill remove storing seq/weights in node and directly access from deser buf
-        cum_weights: []usize,
+        // cum_weights: []usize,
+
+        pub const NodeWeight = struct { char: u8, cum_weight: u32 };
 
         /// does not own seq or (cum_)weights. caller must also call .memoize() before sampling
-        pub fn init(seq: []u8, weights: []NodeWeight, cum_weights: []usize) !Node {
+        pub fn init(seq: []u8, weights: []NodeWeight) !Node {
             const node = Node{
                 .seq = seq,
                 .weights = weights,
-                .cum_weights = cum_weights,
             };
 
             return node;
         }
 
-        pub fn memoize_weights(self: *@This()) void {
-            var sum: usize = 0;
-            for (self.weights, 0..) |wt, wi| {
-                sum += @intCast(wt.weight);
-                self.cum_weights[wi] = sum;
-            }
-        }
-
         pub fn sample(self: *@This(), random: std.Random) u8 {
-            const num = random.intRangeLessThan(usize, 0, self.cum_weights[self.cum_weights.len - 1]);
-            var sum: usize = 0;
+            const num = random.intRangeLessThan(usize, 0, self.weights[self.weights.len - 1].cum_weight);
             for (self.weights) |w| {
-                sum += @intCast(w.weight);
-                if (sum > num) return w.char;
+                if (w.cum_weight > num) return w.char;
             }
 
             unreachable;
@@ -87,7 +76,6 @@ pub const RuntimeChain = struct {
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
-        allocator.free(self.deser_buf.cum_weights);
         allocator.free(self.deser_buf.sequences);
         allocator.free(self.deser_buf.weights);
         allocator.free(self.nodes);

@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const NodeWeight = @import("root.zig").NodeWeight;
 const RuntimeChain = @import("runner.zig").RuntimeChain;
 const TrainerChain = @import("training.zig").TrainerChain;
 const WeightType = @import("root.zig").WeightType;
@@ -66,8 +65,7 @@ pub fn deserializeRunner(allocator: std.mem.Allocator, reader: std.io.AnyReader,
         depth,
         try allocator.alloc(RuntimeChain.Node, node_count),
         RuntimeChain.DeserializedBuffer{
-            .weights = try allocator.alloc(NodeWeight, weights_count),
-            .cum_weights = try allocator.alloc(usize, weights_count),
+            .weights = try allocator.alloc(RuntimeChain.Node.NodeWeight, weights_count),
             .sequences = try allocator.alloc(u8, node_count * depth),
         },
     );
@@ -79,23 +77,23 @@ pub fn deserializeRunner(allocator: std.mem.Allocator, reader: std.io.AnyReader,
         var node = try RuntimeChain.Node.init(
             chain.deser_buf.sequences[i * depth .. (i + 1) * depth],
             chain.deser_buf.weights[weights_offset .. weights_offset + node_weights_count],
-            chain.deser_buf.cum_weights[weights_offset .. weights_offset + node_weights_count],
         );
 
         weights_offset += node_weights_count;
 
         _ = try reader.readAll(node.seq);
+        var weight_sum: u32 = 0;
         for (0..node_weights_count) |wi| {
             const char = try reader.readByte();
             const weight = try reader.readInt(WeightType, .little);
 
-            node.weights[wi] = NodeWeight{
+            weight_sum += weight;
+
+            node.weights[wi] = RuntimeChain.Node.NodeWeight{
                 .char = char,
-                .weight = weight,
+                .cum_weight = weight_sum,
             };
         }
-
-        node.memoize_weights();
 
         chain.nodes[i] = node;
         if (progress) |p| p.completeOne();
