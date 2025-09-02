@@ -2,7 +2,6 @@ const std = @import("std");
 
 const RuntimeChain = @import("runner.zig").RuntimeChain;
 const TrainerChain = @import("training.zig").TrainerChain;
-const WeightType = @import("root.zig").WeightType;
 
 /// serializer version is different from main version since i dont think ill change the model format much
 pub const VERSION: u8 = 1;
@@ -10,7 +9,7 @@ pub const VERSION: u8 = 1;
 // FORMAT
 // root -> GRIL{version:u8}{depth:u32}{node_count:u32}{total_weights_count:u32}{content}LIRG
 // content -> {node * node_count}
-// node -> {seq:[]u8}{node_weights_count:u8}{char_weight * node_weights_count}
+// node -> {node_weights_count-1:u8}{seq:[]u8}{char_weight * node_weights_count}
 // char_weight -> {char:u8}{weight:u32}
 
 // ill probably add gzipping
@@ -20,7 +19,7 @@ pub fn serializeTrainer(chain: TrainerChain, writer: std.io.AnyWriter, progress:
     defer if (progress) |p| p.end();
 
     try writer.writeAll("GRIL");
-    try writer.writeByte(@intCast(VERSION));
+    try writer.writeByte(VERSION);
 
     try writer.writeInt(u32, chain.depth, .little);
     try writer.writeInt(u32, @intCast(chain.nodes.items.len), .little);
@@ -31,12 +30,13 @@ pub fn serializeTrainer(chain: TrainerChain, writer: std.io.AnyWriter, progress:
     for (chain.nodes.items) |node| weights_count += node.weights.items.len;
 
     try writer.writeInt(u32, @intCast(weights_count), .little);
+
     for (chain.nodes.items) |node| {
         try writer.writeByte(@intCast(node.weights.items.len - 1));
         try writer.writeAll(node.seq);
         for (node.weights.items) |wt| {
             try writer.writeByte(wt.char);
-            try writer.writeInt(WeightType, wt.weight, .little);
+            try writer.writeInt(u32, wt.weight, .little);
         }
 
         if (progress) |p| p.completeOne();
@@ -85,7 +85,7 @@ pub fn deserializeRunner(allocator: std.mem.Allocator, reader: std.io.AnyReader,
         var weight_sum: u32 = 0;
         for (0..node_weights_count) |wi| {
             const char = try reader.readByte();
-            const weight = try reader.readInt(WeightType, .little);
+            const weight = try reader.readInt(u32, .little);
 
             weight_sum += weight;
 
@@ -135,8 +135,9 @@ pub fn convertYaml(allocator: std.mem.Allocator, reader: std.io.AnyReader, write
     defer allocator.free(seq_buf);
 
     for (0..node_count) |_| {
-        _ = try reader.readAll(seq_buf);
         const node_weights_count: usize = @as(usize, @intCast(try reader.readByte())) + 1;
+
+        _ = try reader.readAll(seq_buf);
 
         try writer.print("  - seq: |\n      ", .{});
         for (seq_buf) |c| {
@@ -148,7 +149,7 @@ pub fn convertYaml(allocator: std.mem.Allocator, reader: std.io.AnyReader, write
 
         for (0..node_weights_count) |_| {
             const char = try reader.readByte();
-            const weight = try reader.readInt(WeightType, .little);
+            const weight = try reader.readInt(u32, .little);
 
             try writer.print(
                 \\      - char: {d}

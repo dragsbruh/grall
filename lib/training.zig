@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const revCmp = @import("util.zig").revCmp;
-const WeightType = @import("root.zig").WeightType;
 
 pub const TrainerChain = struct {
     depth: u32,
@@ -11,7 +10,7 @@ pub const TrainerChain = struct {
         seq: []u8,
         weights: std.ArrayListUnmanaged(NodeWeight),
 
-        pub const NodeWeight = struct { char: u8, weight: WeightType };
+        pub const NodeWeight = struct { char: u8, weight: u32 };
 
         pub fn init(allocator: std.mem.Allocator, seq: []const u8) !*Node {
             const self = try allocator.create(Node);

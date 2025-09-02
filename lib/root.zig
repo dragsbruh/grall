@@ -7,8 +7,6 @@ pub const TrainerChain = @import("training.zig").TrainerChain;
 
 pub const VERSION = "0.0.1";
 
-pub const WeightType = u32;
-
 pub const SeqManager = struct {
     seq: []u8,
 
