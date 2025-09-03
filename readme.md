@@ -5,6 +5,7 @@ a (hopefully) fast and memory efficient markov trainer/runner
 ## demo
 
 > I must say also a few words. Leave me; I am inexorable.
+> 
 > \- _Grall, trained on Frankenstein_
 
 ## installation
@@ -39,9 +40,13 @@ usage: grall <command> [...args]
 
 commands:
   train   <modelfile> <depth> [...text-files]
-  run     <modelfile> [infinite] [delay]
+  run     <modelfile>
   yaml    <modelfile> <yamlfile>
-          convert model to (not-so-correct) yaml (for debugging)
+          convert model to yaml (for debugging)
+  api     <modelfile>
+          start the stdio api
+  inspect <modelfile>
+          get modelfile information
   help
   version
 ```
@@ -75,11 +80,9 @@ after [training](#training-a-model), you can run the serialized model with this 
 grall run ./model.gril
 ```
 
-`ending_style` -> generation ending style. only for plaintext inputs. `line` will make the runtime stop after
-every new line, etc. see [termination style](./docs/termination.md).
-`delay` -> sleeps `delay` ms per token generation
-
 ### api
+
+> note: the stdio api will change a bit in the future, i dont like it much how it is now
 
 you can alternatively use the stdio api if you wanna programmatically interact with a grall model.
 
@@ -96,7 +99,7 @@ here `[]` denotes optional argument and `<>` is mandatory argument.
 
 optional arguments can be omitted and will use zero value defaults.
 
-#### available commands
+#### available api commands
 
 **1. `new:<name>:[limit]:[seed]`**
 
@@ -131,7 +134,7 @@ flushes stdout, note that this is not required because we already have an intern
 sets flush timer to flush every `count` iterations. includes empty iterations with no jobs.
 using `0` disables buffering. default is `20`.
 
-#### output
+#### api output
 
 output is newline delimited with `:` separator for arguments.
 commands are also echoed after success.
@@ -166,3 +169,15 @@ info:<depth>:<node_count>
 
 dont use funky characters for task name etc. keep it simple a-z or A-Z or 1-9.
 newlines will cause some issues.
+
+## todo
+
+- [ ] training optimization (move away from sorted arrays to probably a tree-like structure? but thats probably memory bloat)
+- [ ] chunked trainings and model merging (allows distributed training, cool)
+- [ ] better stdio api
+- [ ] better cli
+- [ ] make it faster (goal: 10MB/sec)
+
+i plan to make an openai-like api for this but that will be a different repo,
+ill probably call it [opengrall](https://github.com/dragsbruh/opengrall).
+this repo is purely for the zig implementation of the engine.
