@@ -52,8 +52,8 @@ commands:
   run     <modelfile>
   yaml    <modelfile> <yamlfile>
           convert model to yaml (for debugging)
-  api     <modelfile>
-          start the stdio api
+  ipc     <modelfile>
+          start the unix socket
   inspect <modelfile>
           get modelfile information
   help
@@ -137,10 +137,10 @@ newlines will cause some issues.
 
 - [ ] training optimization (move away from sorted arrays to probably a tree-like structure? but thats probably memory bloat)
 - [ ] chunked trainings and model merging (allows distributed training, cool)
-- [ ] better stdio api
 - [ ] better cli
 - [ ] make it faster (goal: 10MB/sec)
 - [ ] upgrade to [zig 0.15.1](https://ziglang.org/download/0.15.1/release-notes.html)
+- [x] better ipc socket
 
 i plan to make an openai-like api for this but that will be a different repo,
 ill probably call it [opengrall](https://github.com/dragsbruh/opengrall).
