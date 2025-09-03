@@ -14,6 +14,8 @@ fn printUsage(out: anytype) !void {
         \\  run     <modelfile>
         \\  yaml    <modelfile> <yamlfile>
         \\          convert model to yaml (for debugging)
+        \\  api     <modelfile>
+        \\          start the stdio api
         \\  help
         \\  version
         \\
