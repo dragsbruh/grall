@@ -19,7 +19,7 @@ pub const SeqManager = struct {
         return self;
     }
 
-    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
         allocator.free(self.seq);
     }
 

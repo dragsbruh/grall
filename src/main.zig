@@ -2,8 +2,8 @@ const std = @import("std");
 
 const lib = @import("grall_lib");
 
-const api = @import("api.zig");
 const commands = @import("commands.zig");
+const ipc = @import("ipc.zig");
 
 fn printUsage(out: anytype) !void {
     try out.print(
@@ -14,8 +14,8 @@ fn printUsage(out: anytype) !void {
         \\  run     <modelfile>
         \\  yaml    <modelfile> <yamlfile>
         \\          convert model to yaml (for debugging)
-        \\  api     <modelfile>
-        \\          start the stdio api
+        \\  ipc     <modelfile> <socket_path>
+        \\          start the unix socket
         \\  inspect <modelfile>
         \\          get modelfile information
         \\  help
@@ -91,16 +91,17 @@ fn run(allocator: std.mem.Allocator) anyerror!void {
             try commands.yaml(allocator, model_path, yaml_path);
         },
 
-        .api => {
-            if (args_alloc.len != 3) {
-                try stderr.print("error: expected atleast 3 arguments, got {d}\n\n", .{args_alloc.len});
+        .ipc => {
+            if (args_alloc.len != 4) {
+                try stderr.print("error: expected atleast 4 arguments, got {d}\n\n", .{args_alloc.len});
                 try printUsage(stderr);
                 return error.Exit;
             }
 
             const model_path = args_alloc[2];
+            const socket_path = args_alloc[3];
 
-            try api.api(allocator, model_path);
+            try ipc.start(allocator, model_path, socket_path);
         },
 
         .help => try printUsage(stdout),
@@ -124,7 +125,7 @@ fn run(allocator: std.mem.Allocator) anyerror!void {
     }
 }
 
-const Command = enum { train, run, help, version, yaml, api, inspect };
+const Command = enum { train, run, help, version, yaml, ipc, inspect };
 
 pub fn main() !u8 {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
