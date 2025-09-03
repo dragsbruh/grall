@@ -121,3 +121,23 @@ pub fn yaml(allocator: std.mem.Allocator, model_path: []const u8, yaml_path: []c
 
     try buffered_writer.flush();
 }
+
+pub fn inspect(model_path: []const u8) !void {
+    const stderr = std.io.getStdErr().writer();
+    const stdout = std.io.getStdOut().writer();
+
+    var file = std.fs.cwd().openFile(model_path, .{}) catch |err| {
+        try stderr.print("error: could not open model file - {}\n", .{err});
+        return error.Exit;
+    };
+    defer file.close();
+
+    const info = try lib.serializer.getInfo(file.reader().any());
+
+    try stdout.print(
+        \\depth: {d}
+        \\nodes: {d}
+        \\weights: {d}
+        \\
+    , .{ info.depth, info.nodes, info.weights });
+}

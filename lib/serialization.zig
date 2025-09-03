@@ -162,3 +162,29 @@ pub fn convertYaml(allocator: std.mem.Allocator, reader: std.io.AnyReader, write
     _ = try reader.readAll(&endsBuf);
     if (!std.mem.eql(u8, &endsBuf, "LIRG")) return error.InvalidHeader;
 }
+
+pub const ModelInfo = struct {
+    depth: usize,
+    nodes: usize,
+    weights: usize,
+};
+
+/// does not seek back to zero
+pub fn getInfo(reader: std.io.AnyReader) !ModelInfo {
+    var endsBuf: [4]u8 = undefined;
+
+    _ = try reader.readAll(&endsBuf);
+    if (!std.mem.eql(u8, &endsBuf, "GRIL")) return error.InvalidHeader;
+
+    if (try reader.readByte() != VERSION) return error.VersionMismatch;
+
+    const depth = try reader.readInt(u32, .little);
+    const node_count = try reader.readInt(u32, .little);
+    const weights_count = try reader.readInt(u32, .little);
+
+    return ModelInfo{
+        .depth = depth,
+        .nodes = node_count,
+        .weights = weights_count,
+    };
+}

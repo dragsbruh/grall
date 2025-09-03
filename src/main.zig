@@ -16,6 +16,8 @@ fn printUsage(out: anytype) !void {
         \\          convert model to yaml (for debugging)
         \\  api     <modelfile>
         \\          start the stdio api
+        \\  inspect <modelfile>
+        \\          get modelfile information
         \\  help
         \\  version
         \\
@@ -108,10 +110,21 @@ fn run(allocator: std.mem.Allocator) anyerror!void {
             \\serializer format v{d}
             \\
         , .{ lib.VERSION, lib.serializer.VERSION }),
+
+        .inspect => {
+            if (args_alloc.len != 3) {
+                try stderr.print("error: expected atleast 3 arguments, got {d}\n\n", .{args_alloc.len});
+                try printUsage(stderr);
+                return error.Exit;
+            }
+
+            const model_path = args_alloc[2];
+            try commands.inspect(model_path);
+        },
     }
 }
 
-const Command = enum { train, run, help, version, yaml, api };
+const Command = enum { train, run, help, version, yaml, api, inspect };
 
 pub fn main() !u8 {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
