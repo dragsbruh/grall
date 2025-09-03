@@ -52,7 +52,7 @@ commands:
   run     <modelfile>
   yaml    <modelfile> <yamlfile>
           convert model to yaml (for debugging)
-  ipc     <modelfile>
+  ipc     <modelfile> <socket_path>
           start the unix socket
   inspect <modelfile>
           get modelfile information
