@@ -81,8 +81,11 @@ pub fn run(allocator: std.mem.Allocator, model_path: []const u8, infinite: bool,
     var buffered_writer = std.io.bufferedWriter(stdout);
     const writer = buffered_writer.writer();
 
+    var prng = std.Random.RomuTrio.init(std.crypto.random.int(u64));
+    var random = prng.random();
+
     while (true) {
-        const byte = chain.sampleNode(seq.seq, .nearest) orelse if (infinite) {
+        const byte = chain.sampleNode(seq.seq, .nearest, &random) orelse if (infinite) {
             seq.reset();
             continue;
         } else break;

@@ -7,7 +7,6 @@ const WeightType = @import("root.zig").WeightType;
 pub const RuntimeChain = struct {
     depth: u32,
     nodes: []Node,
-    random: std.Random.RomuTrio,
 
     /// used for deserialized models to speed up loading
     deser_buf: DeserializedBuffer,
@@ -41,8 +40,8 @@ pub const RuntimeChain = struct {
             return node;
         }
 
-        pub fn sample(self: *@This(), random: *std.Random.RomuTrio) u8 {
-            const num = random.random().intRangeLessThan(usize, 0, self.weights[self.weights.len - 1].cum_weight);
+        pub fn sample(self: *@This(), random: *std.Random) u8 {
+            const num = random.intRangeLessThan(usize, 0, self.weights[self.weights.len - 1].cum_weight);
             for (self.weights) |w| {
                 if (w.cum_weight > num) return w.char;
             }
@@ -57,7 +56,6 @@ pub const RuntimeChain = struct {
             .nodes = nodes,
             .depth = depth,
             .deser_buf = deser_buf,
-            .random = std.Random.RomuTrio.init(std.crypto.random.int(u64)),
             .indexes = undefined,
         };
     }
@@ -80,7 +78,7 @@ pub const RuntimeChain = struct {
         allocator.free(self.nodes);
     }
 
-    pub fn sampleNode(self: *@This(), seq: []const u8, matcher: NodeMatchType) ?u8 {
+    pub fn sampleNode(self: *@This(), seq: []const u8, matcher: NodeMatchType, random: *std.Random) ?u8 {
         const idx = self.indexes[seq[seq.len - 1]];
         var low: usize = if (idx) |i| i.begin else 0;
         var high: usize = if (idx) |i| i.end else self.nodes.len;
@@ -92,13 +90,13 @@ pub const RuntimeChain = struct {
             switch (revCmp(seq, node.seq)) {
                 .lt => high = mid,
                 .gt => low = mid + 1,
-                .eq => return node.sample(&self.random),
+                .eq => return node.sample(random),
             }
         }
 
         return switch (matcher) {
             .precise => null,
-            .nearest => if (self.nodes[low].seq[0] == seq[0]) self.nodes[low].sample(&self.random) else null,
+            .nearest => if (self.nodes[low].seq[0] == seq[0]) self.nodes[low].sample(random) else null,
         };
     }
 };
