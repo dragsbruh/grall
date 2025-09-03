@@ -5,7 +5,7 @@ const lib = @import("grall_lib");
 pub fn train(allocator: std.mem.Allocator, model_path: []const u8, depth: u32, text_files: []const []const u8) !void {
     const stderr = std.io.getStdErr().writer();
 
-    var chain = try lib.TrainerChain.init(depth);
+    var chain = lib.TrainerChain.init(depth);
     defer chain.deinit(allocator);
 
     for (text_files) |file_path| std.fs.cwd().access(file_path, .{}) catch |err| {

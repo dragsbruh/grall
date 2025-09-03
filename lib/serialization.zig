@@ -22,24 +22,32 @@ pub fn serializeTrainer(chain: TrainerChain, writer: std.io.AnyWriter, progress:
     try writer.writeByte(VERSION);
 
     try writer.writeInt(u32, chain.depth, .little);
-    try writer.writeInt(u32, @intCast(chain.nodes.items.len), .little);
 
+    var nodes_count: usize = 0;
     var weights_count: usize = 0;
 
-    if (progress) |p| p.setEstimatedTotalItems(chain.nodes.items.len);
-    for (chain.nodes.items) |node| weights_count += node.weights.items.len;
-
-    try writer.writeInt(u32, @intCast(weights_count), .little);
-
-    for (chain.nodes.items) |node| {
-        try writer.writeByte(@intCast(node.weights.items.len - 1));
-        try writer.writeAll(node.seq);
-        for (node.weights.items) |wt| {
-            try writer.writeByte(wt.char);
-            try writer.writeInt(u32, wt.weight, .little);
+    for (0..chain.nodes.len) |i| {
+        for (chain.nodes[i].items) |node| {
+            weights_count += node.weights.items.len;
         }
+        nodes_count += chain.nodes[i].items.len;
+    }
 
-        if (progress) |p| p.completeOne();
+    try writer.writeInt(u32, @intCast(nodes_count), .little);
+    try writer.writeInt(u32, @intCast(weights_count), .little);
+    if (progress) |p| p.setEstimatedTotalItems(nodes_count);
+
+    for (0..chain.nodes.len) |i| {
+        for (chain.nodes[i].items) |node| {
+            try writer.writeByte(@intCast(node.weights.items.len - 1));
+            try writer.writeAll(node.seq);
+            for (node.weights.items) |wt| {
+                try writer.writeByte(wt.char);
+                try writer.writeInt(u32, wt.weight, .little);
+            }
+
+            if (progress) |p| p.completeOne();
+        }
     }
 
     try writer.writeAll("LIRG");

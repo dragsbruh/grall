@@ -4,7 +4,7 @@ const revCmp = @import("util.zig").revCmp;
 
 pub const TrainerChain = struct {
     depth: u32,
-    nodes: std.ArrayListUnmanaged(*Node),
+    nodes: [256]std.ArrayListUnmanaged(*Node),
 
     pub const Node = struct {
         seq: []u8,
@@ -52,26 +52,31 @@ pub const TrainerChain = struct {
         }
     };
 
-    pub fn init(depth: u32) !TrainerChain {
-        return TrainerChain{
+    pub fn init(depth: u32) TrainerChain {
+        var self = TrainerChain{
             .depth = depth,
-            .nodes = .empty,
+            .nodes = undefined,
         };
+
+        for (0..self.nodes.len) |i| self.nodes[i] = .empty;
+
+        return self;
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
-        for (self.nodes.items) |node| node.deinit(allocator);
-
-        self.nodes.deinit(allocator);
+        for (0..self.nodes.len) |i| {
+            for (self.nodes[i].items) |node| node.deinit(allocator);
+            self.nodes[i].deinit(allocator);
+        }
     }
 
     pub fn getNode(self: *@This(), allocator: std.mem.Allocator, seq: []const u8) !*Node {
         var low: usize = 0;
-        var high: usize = self.nodes.items.len;
+        var high: usize = self.nodes[seq[seq.len - 1]].items.len;
 
         while (low < high) {
             const mid: usize = (low + high) / 2;
-            const node: *Node = self.nodes.items[mid];
+            const node: *Node = self.nodes[seq[seq.len - 1]].items[mid];
 
             switch (revCmp(seq, node.seq)) {
                 .lt => high = mid,
@@ -81,7 +86,7 @@ pub const TrainerChain = struct {
         }
 
         const node = try Node.init(allocator, seq);
-        try self.nodes.insert(allocator, low, node);
+        try self.nodes[seq[seq.len - 1]].insert(allocator, low, node);
 
         return node;
     }
