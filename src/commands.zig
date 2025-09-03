@@ -13,7 +13,10 @@ pub fn train(allocator: std.mem.Allocator, model_path: []const u8, depth: u32, t
         return error.Exit;
     };
 
-    const progress = std.Progress.start(.{ .root_name = "training", .estimated_total_items = text_files.len + 1 });
+    const progress = std.Progress.start(.{
+        .root_name = "training",
+        .estimated_total_items = text_files.len + 1,
+    });
     defer progress.end();
 
     var seq = try lib.SeqManager.init(allocator, chain.depth);
@@ -35,9 +38,7 @@ pub fn train(allocator: std.mem.Allocator, model_path: []const u8, depth: u32, t
 
         while (reader.readByte() catch null) |byte| {
             defer p.completeOne();
-
-            const node = try chain.getNode(allocator, seq.seq);
-            try node.feed(allocator, byte);
+            try chain.incrementWeight(allocator, seq.seq, byte);
             seq.push(byte);
         }
     }
