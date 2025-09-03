@@ -102,8 +102,6 @@ pub fn deserializeRunner(allocator: std.mem.Allocator, reader: std.io.AnyReader,
     _ = try reader.readAll(&endsBuf);
     if (!std.mem.eql(u8, &endsBuf, "LIRG")) return error.InvalidHeader;
 
-    chain.build_index();
-
     return chain;
 }
 

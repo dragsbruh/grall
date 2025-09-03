@@ -60,18 +60,6 @@ pub const RuntimeChain = struct {
         };
     }
 
-    pub fn build_index(self: *@This()) void {
-        var i: usize = 0;
-        while (i < self.nodes.len) : (i += 1) {
-            const b: u8 = self.nodes[i].seq[self.depth - 1];
-            if (self.indexes[b] == null) {
-                self.indexes[b] = .{ .begin = i, .end = i + 1 };
-            } else {
-                self.indexes[b].?.end = i + 1;
-            }
-        }
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         allocator.free(self.deser_buf.sequences);
         allocator.free(self.deser_buf.weights);
@@ -79,9 +67,8 @@ pub const RuntimeChain = struct {
     }
 
     pub fn sampleNode(self: *@This(), seq: []const u8, matcher: NodeMatchType, random: *std.Random) ?u8 {
-        const idx = self.indexes[seq[seq.len - 1]];
-        var low: usize = if (idx) |i| i.begin else 0;
-        var high: usize = if (idx) |i| i.end else self.nodes.len;
+        var low: usize = 0;
+        var high: usize = self.nodes.len;
 
         while (low < high) {
             const mid: usize = (low + high) / 2;
