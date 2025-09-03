@@ -2,6 +2,13 @@
 
 a (hopefully) fast and memory efficient markov trainer/runner
 
+![zig](https://img.shields.io/badge/zig-0.14.1-orange?style=flat-square)
+![license](https://img.shields.io/badge/License-MIT-brightgreen?style=flat-square)
+![last release](https://img.shields.io/github/release-date/dragsbruh/grall?style=flat-square)
+![issues](https://img.shields.io/github/issues/dragsbruh/grall?style=flat-square)
+![stars](https://img.shields.io/github/stars/dragsbruh/grall?style=flat-square)
+![last commit](https://img.shields.io/github/last-commit/dragsbruh/grall?style=flat-square)
+
 ## demo
 
 > I must say also a few words. Leave me; I am inexorable.
@@ -9,6 +16,8 @@ a (hopefully) fast and memory efficient markov trainer/runner
 > \- _Grall, trained on Frankenstein_
 
 ## installation
+
+currently windows support is not tested and is not a priority. this may simply not work on windows
 
 if there are [releases](https://github.com/dragsbruh/grall/releases) available, download
 the binaries for your os from there. otherwise you can [compile from source](#compiling-from-source).
@@ -82,7 +91,8 @@ grall run ./model.gril
 
 ### api
 
-> note: the stdio api will change a bit in the future, i dont like it much how it is now
+> note: the stdio api will change a bit in the future, i dont like it much how it is now.
+> i will probably use unix sockets the next api rewrite.
 
 you can alternatively use the stdio api if you wanna programmatically interact with a grall model.
 
@@ -177,7 +187,12 @@ newlines will cause some issues.
 - [ ] better stdio api
 - [ ] better cli
 - [ ] make it faster (goal: 10MB/sec)
+- [ ] upgrade to [zig 0.15.1](https://ziglang.org/download/0.15.1/release-notes.html)
 
 i plan to make an openai-like api for this but that will be a different repo,
 ill probably call it [opengrall](https://github.com/dragsbruh/opengrall).
 this repo is purely for the zig implementation of the engine.
+
+## license
+
+grall has an [MIT license](LICENSE.md).
