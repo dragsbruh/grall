@@ -213,7 +213,24 @@ fn connHandler(allocator: std.mem.Allocator, chain: *lib.RuntimeChain, conn: std
     }
 }
 
-pub fn start(allocator: std.mem.Allocator, model_path: []const u8, socket_path: []const u8) !void {
+// TODO: make this not a global
+var socket_path: ?[]const u8 = null;
+fn signalHandler(_: c_int) callconv(.C) void {
+    if (socket_path) |p| std.fs.cwd().deleteFile(p) catch {};
+    std.posix.exit(1);
+}
+
+pub fn start(allocator: std.mem.Allocator, model_path: []const u8, model_sock_path: []const u8) !void {
+    socket_path = model_sock_path;
+
+    var act = std.posix.Sigaction{
+        .handler = .{ .handler = signalHandler },
+        .mask = std.posix.empty_sigset,
+        .flags = 0,
+    };
+    std.posix.sigaction(std.posix.SIG.TERM, &act, null);
+    std.posix.sigaction(std.posix.SIG.INT, &act, null);
+
     const stderr = std.io.getStdErr().writer();
 
     var chain = blk: {
@@ -230,11 +247,11 @@ pub fn start(allocator: std.mem.Allocator, model_path: []const u8, socket_path: 
     };
     defer chain.deinit(allocator);
 
-    try stderr.print("starting unix socket on {s}\n", .{socket_path});
+    try stderr.print("starting unix socket on {s}\n", .{model_sock_path});
 
-    std.fs.cwd().deleteFile(socket_path) catch {};
+    std.fs.cwd().deleteFile(model_sock_path) catch {};
 
-    const addr = try std.net.Address.initUnix(socket_path);
+    const addr = try std.net.Address.initUnix(model_sock_path);
     var server = try addr.listen(.{});
 
     var threads = std.ArrayListUnmanaged(std.Thread).empty;
