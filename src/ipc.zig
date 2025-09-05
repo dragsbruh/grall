@@ -11,7 +11,6 @@ const Task = struct {
     token_buf: [4]u8,
 
     pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
         self.seq.deinit(allocator);
     }
 };
@@ -85,7 +84,6 @@ fn processCommand(
         .new => {
             const name = try data_types.read_sequence(allocator, reader);
             const seed = try data_types.read_sequence(allocator, reader);
-            defer allocator.free(seed);
 
             const limit = try data_types.read_u32(reader);
             const delay = try data_types.read_u32(reader);
@@ -101,13 +99,19 @@ fn processCommand(
             for (seed) |c| task.seq.push(c);
 
             try tasks.put(allocator, name, task);
+            allocator.free(seed);
         },
 
         .end => {
             const name = try data_types.read_sequence(allocator, reader);
 
             const task = tasks.fetchRemove(name);
-            if (task) |t| t.value.deinit(allocator);
+            if (task) |kv| {
+                allocator.free(kv.key);
+                kv.value.deinit(allocator);
+            }
+
+            allocator.free(name);
         },
 
         .ping => {
@@ -197,12 +201,15 @@ fn connHandler(allocator: std.mem.Allocator, chain: *lib.RuntimeChain, conn: std
         }
 
         for (completedTasks.items) |task_name| {
-            const task = tasks.fetchRemove(task_name) orelse continue;
-            defer task.value.deinit(allocator);
+            const kv = tasks.fetchRemove(task_name) orelse continue;
 
             try data_types.write_rescode(writer, .end);
             try data_types.write_sequence(writer, task_name);
+
+            allocator.free(kv.key);
+            kv.value.deinit(allocator);
         }
+        completedTasks.clearRetainingCapacity();
     }
 }
 
