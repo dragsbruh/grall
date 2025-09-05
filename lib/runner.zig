@@ -83,7 +83,7 @@ pub const RuntimeChain = struct {
 
         return switch (matcher) {
             .precise => null,
-            .nearest => if (self.nodes[low].seq[0] == seq[0]) self.nodes[low].sample(random) else null,
+            .nearest => if (self.nodes[low].seq[seq.len - 1] == seq[seq.len - 1]) self.nodes[low].sample(random) else null,
         };
     }
 };
