@@ -9,6 +9,7 @@ const Task = struct {
     seq: lib.SeqManager,
     delay: usize,
     token_buf: [4]u8,
+    last_processed: i64, // milliseconds
 
     pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
         self.seq.deinit(allocator);
@@ -95,6 +96,7 @@ fn processCommand(
                 .generated = 0,
                 .token_buf = undefined,
                 .seq = try lib.SeqManager.init(allocator, chain.depth),
+                .last_processed = std.time.milliTimestamp(),
             };
             for (seed) |c| task.seq.push(c);
 
@@ -171,8 +173,12 @@ fn connHandler(allocator: std.mem.Allocator, chain: *lib.RuntimeChain, conn: std
             };
         }
 
+        const now = std.time.milliTimestamp();
         var iter = tasks.valueIterator();
         ol: while (iter.next()) |task| {
+            if (task.last_processed + @as(i64, @intCast(task.delay)) > now) continue;
+            task.last_processed = now;
+
             for (0..4) |i| {
                 const maybe_byte = chain.sampleNode(task.seq.seq, .nearest, &random);
                 if (maybe_byte) |byte| {
@@ -186,7 +192,6 @@ fn connHandler(allocator: std.mem.Allocator, chain: *lib.RuntimeChain, conn: std
                     }
 
                     try completedTasks.append(allocator, task.name);
-                    if (task.delay > 0) std.Thread.sleep(task.delay * std.time.ns_per_ms);
                     continue :ol;
                 }
             }
@@ -197,7 +202,6 @@ fn connHandler(allocator: std.mem.Allocator, chain: *lib.RuntimeChain, conn: std
 
             task.generated += 4;
             if (task.limit > 0 and task.generated >= task.limit) try completedTasks.append(allocator, task.name);
-            if (task.delay > 0) std.Thread.sleep(task.delay * std.time.ns_per_ms);
         }
 
         for (completedTasks.items) |task_name| {
