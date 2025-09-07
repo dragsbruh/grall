@@ -1,5 +1,7 @@
 # grall
 
+> **note:** this does give random-ish answers, that is intended behavior. it is a markov chain after all!
+
 a (hopefully) fast and memory efficient markov trainer/runner
 
 ![zig](https://img.shields.io/badge/zig-0.14.1-orange?style=flat-square)
@@ -12,7 +14,7 @@ a (hopefully) fast and memory efficient markov trainer/runner
 ## demo
 
 > I must say also a few words. Leave me; I am inexorable.
-> 
+>
 > \- _Grall, trained on Frankenstein_
 
 ## installation
